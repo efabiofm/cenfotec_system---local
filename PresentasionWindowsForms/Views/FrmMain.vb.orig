@@ -1,0 +1,252 @@
+﻿Imports System.Text.RegularExpressions
+Imports System.Net.Mail
+Imports PresentasionWindowsForms.My.Resources
+
+Public Class FrmMain
+    Private user As UserModel
+    Sub New(ByRef puser As UserModel)
+        ' Llamada necesaria para el diseñador.
+        InitializeComponent()
+        ' Agregue cualquier inicialización después de la llamada a InitializeComponent().
+        user = puser
+        Me.tabsContainer.TabPages.Remove(Me.tabProducts)
+        Me.tabsContainer.TabPages.Remove(Me.tabProspectus)
+        Me.tabsContainer.TabPages.Remove(Me.tabSales)
+        Me.tabsContainer.TabPages.Remove(Me.tabEvents)
+        Me.tabsContainer.TabPages.Remove(Me.tabKpi)
+        Me.tabsContainer.TabPages.Remove(Me.tabUsers)
+        Me.tabsContainer.TabPages.Remove(Me.tabReports)
+        Me.tabsContainer.TabPages.Remove(Me.tabConfiguration)
+    End Sub
+
+    Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        'hideCreateUserForm()
+        showListOfUsers()
+    End Sub
+
+    Private Sub hideCreateUserForm()
+        Me.pnlCreateUser.Hide()
+        clearCreateUserForm()
+    End Sub
+
+    Private Sub showListUserForm()
+        'Me.pnListUsers.Show()
+    End Sub
+
+    'MOSTRAR Y OCULTAR FORMS ******************************************************
+    Private Sub hideListUserForm()
+        Me.pnlCreateUser.Hide()
+
+    End Sub
+
+    Private Sub clearCreateUserForm()
+        txtIdCreateUser.Text = ""
+        txtNameCreateUser.Text = ""
+        txtLastNameCreateUser.Text = ""
+        txtPasswordCreateUser.Text = ""
+        txtPhoneCreateUser.Text = ""
+        txtEmailCreateUser.Text = ""
+        tgEnableCreateUser.Checked = False
+    End Sub
+
+    Private Sub showCreateUserForm(ByVal id As String)
+        clearCreateUserForm()
+        Me.pnlCreateUser.Visible = True
+        Dim roles As List(Of RolModel) = RolsController.obtener()
+        'Llenar roles
+        Dim comboSource As New Dictionary(Of String, String)()
+        For Each rol As RolModel In roles
+            comboSource.Add(rol.id_rol.ToString, rol.nombre)
+        Next
+        cboRolCreateUser.DataSource = New BindingSource(comboSource, Nothing)
+        lblCreateUpdateUserId.Text = id
+        cboRolCreateUser.DisplayMember = "Value"
+        cboRolCreateUser.ValueMember = "Key"
+        If id = "-1" Then
+
+        Else
+            Dim user As UserModel = Users_controller.getUser(id)
+            If (Not user Is Nothing) Then
+                txtIdCreateUser.Text = user.cedula
+                txtNameCreateUser.Text = user.nombre
+                txtLastNameCreateUser.Text = user.apellido
+                txtEmailCreateUser.Text = user.correo
+                txtPhoneCreateUser.Text = user.telefono
+                txtPasswordCreateUser.Text = user.password
+                cboRolCreateUser.SelectedItem = "Ventas"
+                tgEnableCreateUser.Checked = user.activo
+                cboDateCreateUser.Value = user.fecha_nacimiento
+            Else
+                MsgBox(respuestasDelSistema.POPULATE_FILLS_ERROR, MsgBoxStyle.Critical)
+            End If
+        End If
+    End Sub
+
+    Private Sub hideListOfUsers()
+        pnListUsers.Hide()
+    End Sub
+
+    Private Sub showListOfUsers()
+        pnListUsers.Show()
+        populateListOfUsers()
+    End Sub
+
+
+    ' ******************************************************
+    Private Sub btnSaveCreateUser_Click(sender As Object, e As EventArgs) Handles btnSaveCreateUser.Click
+        Dim id_rol As String = DirectCast(cboRolCreateUser.SelectedItem, KeyValuePair(Of String, String)).Key
+        If (validateCreateUserForm()) Then
+            If String.Compare(lblCreateUpdateUserId.Text, "-1") = 0 Then
+                If (Users_controller.create(txtIdCreateUser.Text, txtNameCreateUser.Text, txtLastNameCreateUser.Text,
+                                        txtEmailCreateUser.Text, txtPhoneCreateUser.Text, txtPasswordCreateUser.Text,
+                                        id_rol, tgEnableCreateUser.Checked, cboDateCreateUser.Value)) Then
+                    showListOfUsers()
+                    hideCreateUserForm()
+                    MsgBox(respuestasDelSistema.CREATE_USER_SUCCESS, MsgBoxStyle.Information)
+                Else
+                    MsgBox(respuestasDelSistema.UPDATE__USER_ERROR, MsgBoxStyle.Critical)
+                End If
+            Else
+                If (Users_controller.update(lblCreateUpdateUserId.Text, txtIdCreateUser.Text, txtNameCreateUser.Text, txtLastNameCreateUser.Text,
+                                            txtEmailCreateUser.Text, txtPhoneCreateUser.Text, txtPasswordCreateUser.Text,
+                                            id_rol, tgEnableCreateUser.Checked, cboDateCreateUser.Value)) Then
+                    MsgBox(respuestasDelSistema.UPDATE_USER_SUCCESS, MsgBoxStyle.Information)
+                    showListOfUsers()
+                    hideCreateUserForm()
+                Else
+                    MsgBox(respuestasDelSistema.UPDATE__USER_ERROR, MsgBoxStyle.Critical)
+                End If
+            End If
+        End If
+    End Sub
+
+<<<<<<< HEAD
+    Private Function validateCreateUserForm() As Boolean
+        Dim result As Boolean = True
+        If OnlyNumbers(txtIdCreateUser.Text) Then
+            result = False
+        End If
+        If OnlyTextAllowSpaces(txtNameCreateUser.Text) Then
+            result = False
+        End If
+        If String.IsNullOrWhiteSpace(txtLastNameCreateUser.Text) Then
+            result = False
+        End If
+        If Not IsEmail(txtEmailCreateUser.Text) Then
+            result = False
+        End If
+        If String.IsNullOrWhiteSpace(txtPhoneCreateUser.Text) Or txtPhoneCreateUser.Text.Length < 8 Then
+            result = False
+        End If
+        If Not IsGoodPassword(txtPasswordCreateUser.Text) Then
+            ErrorProvider1.SetError(txtPasswordCreateUser, respuestasDelSistema.PASSWORD_INCORRECT_FORMAT)
+            result = False
+        End If
+        Return result
+    End Function
+    Private Sub txtLastNameCreateUser_Click(sender As Object, e As EventArgs) Handles txtLastNameCreateUser.Click
+
+    End Sub
+
+    Private Sub MetroTabPage9_Click(sender As Object, e As EventArgs) Handles tabConfiguration.Click
+
+    End Sub
+
+    Private Sub FrmMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        Users_controller.signOut(user)
+    End Sub
+
+    Private Sub lblSignOut_Click(sender As Object, e As EventArgs) Handles lblSignOut.Click
+        Dim login As New FrmLogin()
+        Me.Hide()
+        login.ShowDialog()
+        Me.Close()
+    End Sub
+
+
+    Private Sub btnCancelCreateUser_Click(sender As Object, e As EventArgs) Handles btnCancelCreateUser.Click
+        hideCreateUserForm()
+        showListOfUsers()
+        clearCreateUserForm()
+    End Sub
+
+    Private Sub btnCreateUser_Click(sender As Object, e As EventArgs) Handles btnCreateUser.Click
+        showCreateUserForm(-1)
+        hideListOfUsers()
+    End Sub
+
+    Private Sub populateListOfUsers()
+        lstUsers.Rows.Clear()
+        Dim estado = "Inactivo"
+        Dim usuarios As List(Of UserModel) = Users_controller.getUsers()
+        If (Not usuarios Is Nothing) Then
+            For Each usuario As UserModel In usuarios
+                If usuario.activo Then
+                    estado = "Activo"
+                End If
+                lstUsers.Rows.Add(usuario.id_usuario, usuario.cedula, usuario.nombre, usuario.apellido, usuario.telefono,
+                                      usuario.correo, estado)
+            Next
+        End If
+    End Sub
+
+    Private Sub lstUsers_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles lstUsers.CellContentClick
+        Dim id As String = lstUsers.Rows(e.RowIndex).Cells(0).Value
+        Select Case e.ColumnIndex
+            Case 7
+                hideListOfUsers()
+                showCreateUserForm(id)
+        End Select
+    End Sub
+
+    Function IsEmail(ByVal text As String) As Boolean
+        Static emailExpression As New Regex("^[_a-z0-9-]+(.[a-z0-9-]+)@[a-z0-9-]+(.[a-z0-9-]+)*(.[a-z]{2,4})$")
+        Return emailExpression.IsMatch(text)
+    End Function
+
+    Function IsGoodPassword(ByVal text As String) As Boolean
+        '- 8 caracteres
+        '- no mas de 15 caracteres
+        '- Letra mayuscula, minuscula y un numero
+        Static regularExpression As New Regex("^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,15}$")
+        Return regularExpression.IsMatch(text)
+    End Function
+
+    Function OnlyNumbers(ByVal text As String) As Boolean 'Minimo 8
+        Static regularExpression As New Regex("^[0-9]{8}$")
+        Return regularExpression.IsMatch(text)
+    End Function
+
+    Function OnlyTextAllowSpaces(ByVal text As String) As Boolean
+        Static regularExpression As New Regex("^[a-zA-Z ]*$")
+        Return regularExpression.IsMatch(text)
+    End Function
+
+=======
+    Private Sub btnGuardarProspecto_Click(sender As Object, e As EventArgs) Handles btnGuardarProspecto.Click
+        Dim resul = ProspectusController.guardar(txtNombreProspecto.Text, txtApellidosProspecto.Text, txtFechaNacProspecto.Text,
+                                     txtProcedenciaProspecto.Text, tglEstadoProspecto.Enabled, txtTelProspecto.Enabled,
+                                     txtEmailProspecto.Text, txtDireccionProspecto.Text, tglEstaInteresado.Enabled,
+                                     tglEsCliente.Enabled)
+        If (resul.Equals(True)) Then
+            MsgBox("El prospecto se ha agregado con éxito", MsgBoxStyle.Information, "Éxito")
+        Else
+            MsgBox("Hubo un error al guardar el registro", MsgBoxStyle.Critical, "Error")
+        End If
+    End Sub
+
+    Private Sub btnNvoProspecto_Click(sender As Object, e As EventArgs) Handles btnNvoProspecto.Click
+        PnlListaProspectos.Visible = False
+        PnlNuevoProspecto.Visible = True
+    End Sub
+
+    Private Sub btnCancelarProspecto_Click(sender As Object, e As EventArgs) Handles btnCancelarProspecto.Click
+        PnlListaProspectos.Visible = True
+        PnlNuevoProspecto.Visible = False
+    End Sub
+
+    Private Sub lstProspectos_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles lstProspectos.CellContentClick
+
+    End Sub
+>>>>>>> Formulario y metodo para registrar prospecto en bd
+End Class
